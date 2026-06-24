@@ -79,6 +79,35 @@ class _OrdersScreenState extends State<OrdersScreen> {
     }
   }
 
+  Future<void> _updateOrderStatusFast(Map<String, dynamic> order, int newStatusId) async {
+    // Show a quick non-blocking loading indicator
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Updating status...'), duration: Duration(seconds: 1)));
+    
+    try {
+      List<dynamic> existingStatuses = order['statuses'] ?? [];
+      List<int> statusIds = existingStatuses.map<int>((s) => s['id'] as int).toList();
+      
+      // Add the new status to the timeline if it's not already there
+      if (!statusIds.contains(newStatusId)) {
+        statusIds.add(newStatusId);
+      }
+
+      final body = {
+        'name': order['name'],
+        'address': order['address'] ?? '',
+        'customer_id': order['customer']?['id'] ?? 0,
+        'status_id': statusIds,
+        'active_status_id': newStatusId,
+      };
+
+      await _apiService.post('/orders/${order['id']}/update', body: body);
+      _fetchData();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Status updated!'), backgroundColor: Colors.green));
+    } catch (e) {
+      if (mounted) DialogHelper.showErrorDialog(context, 'Error', 'Failed to update status: $e');
+    }
+  }
+
   void _showMiniCustomerModal(Function onSaved) {
     final nameCtrl = TextEditingController();
     final emailCtrl = TextEditingController();
@@ -194,7 +223,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                         ),
                         if (_apiService.hasPermission('create customer'))
                           IconButton(
-                            icon: const Icon(Icons.add_circle, color: AppTheme.cyan, size: 28),
+                            icon: const Icon(Icons.add_circle, color: AppTheme.adminPrimary, size: 28),
                             onPressed: () {
                               _showMiniCustomerModal(() {
                                 setStateModal(() {
@@ -237,6 +266,22 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
+                              // Delete Button
+                              if (timelineStatuses.length > 1)
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                                  onPressed: () {
+                                    setStateModal(() {
+                                      if (timelineStatuses[i] != null && timelineStatuses[i]['id'] == activeStatusId) {
+                                        activeStatusId = null;
+                                      }
+                                      timelineStatuses.removeAt(i);
+                                    });
+                                  },
+                                  tooltip: 'Remove',
+                                  padding: const EdgeInsets.only(right: 8.0),
+                                  constraints: const BoxConstraints(),
+                                ),
                               // Left: Dropdown
                               Expanded(
                                 flex: 2,
@@ -260,9 +305,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                 width: 40,
                                 child: Column(
                                   children: [
-                                    if (i > 0) Container(width: 2, height: 15, color: AppTheme.cyan),
-                                    const Icon(Icons.circle, size: 16, color: AppTheme.cyan),
-                                    if (i < timelineStatuses.length - 1) Container(width: 2, height: 15, color: AppTheme.cyan),
+                                    if (i > 0) Container(width: 2, height: 15, color: AppTheme.adminPrimary),
+                                    const Icon(Icons.circle, size: 16, color: AppTheme.adminPrimary),
+                                    if (i < timelineStatuses.length - 1) Container(width: 2, height: 15, color: AppTheme.adminPrimary),
                                   ],
                                 ),
                               ),
@@ -411,7 +456,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 style: GoogleFonts.mPlusRounded1c(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.keyBlack,
+                  color: AppTheme.adminText,
                 ),
               ),
               if (_apiService.hasPermission('create orders'))
@@ -433,7 +478,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: ChoiceChip(
                     label: const Text('All'),
                     selected: _selectedStatusFilter == 'All',
-                    selectedColor: AppTheme.cyan.withOpacity(0.2),
+                    selectedColor: AppTheme.adminPrimary.withOpacity(0.2),
                     onSelected: (val) {
                       if (val) setState(() => _selectedStatusFilter = 'All');
                     },
@@ -444,7 +489,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                       child: ChoiceChip(
                         label: Text(status['name']),
                         selected: _selectedStatusFilter == status['name'],
-                        selectedColor: AppTheme.cyan.withOpacity(0.2),
+                        selectedColor: AppTheme.adminPrimary.withOpacity(0.2),
                         onSelected: (val) {
                           if (val) setState(() => _selectedStatusFilter = status['name']);
                         },
@@ -456,105 +501,260 @@ class _OrdersScreenState extends State<OrdersScreen> {
           const SizedBox(height: 16),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppTheme.cyan))
-                : Card(
-                    elevation: 2,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: ListView.separated(
-                      itemCount: filteredOrders.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.adminPrimary))
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    itemCount: filteredOrders.length,
                       itemBuilder: (context, index) {
                         final order = filteredOrders[index];
                         final customerName = order['customer'] != null ? order['customer']['name'] : 'Unknown Customer';
                         
                         String activeStatusName = 'None';
+                        int? activeStatusId;
                         if (order['statuses'] != null) {
                           for (var st in order['statuses']) {
                             if (st['pivot'] != null && st['pivot']['active'] == 1) {
                               activeStatusName = st['name'];
+                              activeStatusId = st['id'];
                               break;
                             }
                           }
                         }
 
-                        return ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: AppTheme.cyan.withOpacity(0.1),
-                            child: const Icon(Icons.shopping_cart, color: AppTheme.cyan),
-                          ),
-                          title: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  '${order['name']} - $customerName', 
-                                  style: GoogleFonts.nunito(fontWeight: FontWeight.bold),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: () {
-                                  Clipboard.setData(ClipboardData(text: order['name']));
-                                  DialogHelper.showSuccessDialog(context, 'Copied', 'Tracking number copied!');
-                                },
-                                child: const Icon(Icons.copy, size: 16, color: Colors.grey),
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppTheme.pastelBlue,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppTheme.adminPrimary.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
-                          subtitle: Text('Status: $activeStatusName | Address: ${order['address']}', style: GoogleFonts.nunito(color: Colors.grey.shade600)),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              if (_apiService.hasPermission('view orders'))
-                                IconButton(
-                                  icon: const Icon(Icons.remove_red_eye_outlined, color: AppTheme.cyan),
-                                  onPressed: () {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      backgroundColor: Colors.transparent,
-                                      builder: (context) => OrderStatusModal(orderData: order),
-                                    );
-                                  },
-                                  tooltip: 'View',
-                                ),
-                              if (_apiService.hasPermission('edit orders'))
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: AppTheme.cyan),
-                                  onPressed: () => _showOrderModal(existingOrder: order),
-                                  tooltip: 'Edit',
-                                ),
-                              if (_apiService.hasPermission('delete orders'))
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                                  onPressed: () {
-                                    showDialog(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: const Text('Delete Order'),
-                                        content: Text('Are you sure you want to delete ${order['name']}?'),
-                                        actions: [
-                                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                                          TextButton(
-                                            onPressed: () {
-                                              Navigator.pop(ctx);
-                                              _deleteOrder(order['id']);
-                                            },
-                                            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.shopping_cart_outlined, color: AppTheme.adminText, size: 20),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            order['name'],
+                                            style: GoogleFonts.mPlusRounded1c(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.w800,
+                                              color: AppTheme.adminText,
+                                            ),
+                                          ),
+                                          Text(
+                                            customerName,
+                                            style: GoogleFonts.nunito(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.adminPrimary,
+                                            ),
                                           ),
                                         ],
                                       ),
-                                    );
-                                  },
-                                  tooltip: 'Delete',
+                                    ],
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        InkWell(
+                                          onTap: () {
+                                            Clipboard.setData(ClipboardData(text: order['name']));
+                                            DialogHelper.showSuccessDialog(context, 'Copied', 'Tracking number copied!');
+                                          },
+                                          child: const Icon(Icons.copy, size: 16, color: Colors.grey),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Delivery Address', style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Text(order['address'] ?? 'No address provided', style: GoogleFonts.nunito(color: AppTheme.adminText, fontWeight: FontWeight.w600)),
+                                        ],
+                                      ),
+                                    ),
+                                    if (_apiService.hasPermission('edit orders')) ...[
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Active Status', style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.softGrey,
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: DropdownButtonHideUnderline(
+                                              child: DropdownButton<int>(
+                                                value: activeStatusId,
+                                                isDense: true,
+                                                icon: const Icon(Icons.keyboard_arrow_down, color: AppTheme.adminPrimary, size: 18),
+                                                items: _statuses.map<DropdownMenuItem<int>>((s) {
+                                                  return DropdownMenuItem<int>(
+                                                    value: s['id'],
+                                                    child: Text(s['name'], style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.adminText)),
+                                                  );
+                                                }).toList(),
+                                                onChanged: (newId) {
+                                                  if (newId != null && newId != activeStatusId) {
+                                                    _updateOrderStatusFast(order, newId);
+                                                  }
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ] else ...[
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text('Active Status', style: GoogleFonts.nunito(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.accentGreen.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(12),
+                                            ),
+                                            child: Text(activeStatusName, style: GoogleFonts.nunito(color: AppTheme.accentGreen, fontWeight: FontWeight.w800)),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  if (_apiService.hasPermission('view orders'))
+                                    IconButton(
+                                      icon: const Icon(Icons.remove_red_eye_rounded, color: AppTheme.adminText),
+                                      onPressed: () {
+                                        showGeneralDialog(
+                                          context: context,
+                                          barrierDismissible: true,
+                                          barrierLabel: 'Dismiss',
+                                          transitionDuration: const Duration(milliseconds: 300),
+                                          pageBuilder: (context, animation, secondaryAnimation) {
+                                            return Align(
+                                              alignment: Alignment.centerRight,
+                                              child: Material(
+                                                type: MaterialType.transparency,
+                                                child: Container(
+                                                  width: 400,
+                                                  height: double.infinity,
+                                                  margin: const EdgeInsets.only(top: 10, bottom: 10, right: 10),
+                                                  decoration: BoxDecoration(
+                                                    color: AppTheme.offWhite,
+                                                    borderRadius: BorderRadius.circular(30),
+                                                    boxShadow: [
+                                                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20)
+                                                    ],
+                                                  ),
+                                                  child: ClipRRect(
+                                                    borderRadius: BorderRadius.circular(30),
+                                                    child: OrderStatusModal(orderData: order),
+                                                  ),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          transitionBuilder: (context, animation, secondaryAnimation, child) {
+                                            return SlideTransition(
+                                              position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic)),
+                                              child: child,
+                                            );
+                                          },
+                                        );
+                                      },
+                                      tooltip: 'View Details',
+                                    ),
+                                  if (_apiService.hasPermission('edit orders'))
+                                    IconButton(
+                                      icon: Icon(Icons.edit_rounded, color: AppTheme.adminPrimary, shadows: [Shadow(color: AppTheme.adminPrimary, blurRadius: 10, offset: const Offset(0, 6))]),
+                                      onPressed: () => _showOrderModal(existingOrder: order),
+                                      tooltip: 'Edit Order',
+                                    ),
+                                  if (_apiService.hasPermission('delete orders'))
+                                    IconButton(
+                                      icon: Icon(Icons.delete_rounded, color: Colors.redAccent, shadows: [Shadow(color: Colors.redAccent, blurRadius: 10, offset: const Offset(0, 6))]),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title: const Text('Delete Order'),
+                                            content: Text('Are you sure you want to delete ${order['name']}?'),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+                                              TextButton(
+                                                onPressed: () {
+                                                  Navigator.pop(ctx);
+                                                  _deleteOrder(order['id']);
+                                                },
+                                                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                      tooltip: 'Delete Order',
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         );
                       },
                     ),
-                  ),
           ),
         ],
       ),

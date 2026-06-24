@@ -137,7 +137,7 @@ class _StatusScreenState extends State<StatusScreen> {
                   style: GoogleFonts.mPlusRounded1c(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.keyBlack,
+                    color: AppTheme.adminText,
                   ),
                 ),
                 if (_apiService.hasPermission('create status'))
@@ -152,21 +152,22 @@ class _StatusScreenState extends State<StatusScreen> {
           const SizedBox(height: 24),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppTheme.cyan))
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.adminPrimary))
                 : Card(
-                    elevation: 2,
+  elevation: 20,
+  shadowColor: AppTheme.adminPrimary.withOpacity(0.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: ListView.separated(
                       itemCount: _statuses.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) => const SizedBox(),
                       itemBuilder: (context, index) {
                         final status = _statuses[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.cyan.withOpacity(0.1),
+                            backgroundColor: AppTheme.adminPrimary.withOpacity(0.1),
                             child: Text(
                               status['name'].toString().substring(0, 1).toUpperCase(),
-                              style: const TextStyle(color: AppTheme.cyan, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: AppTheme.adminPrimary, fontWeight: FontWeight.bold),
                             ),
                           ),
                           title: Text(status['name'], style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
@@ -175,13 +176,13 @@ class _StatusScreenState extends State<StatusScreen> {
                             children: [
                               if (_apiService.hasPermission('edit status'))
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: AppTheme.cyan),
+                                  icon: Icon(Icons.edit_outlined, color: AppTheme.adminPrimary, shadows: [Shadow(color: AppTheme.adminPrimary, blurRadius: 10, offset: const Offset(0, 6))]),
                                   onPressed: () => _showStatusModal(status: status),
                                   tooltip: 'Edit',
                                 ),
                               if (_apiService.hasPermission('delete status'))
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                                  icon: Icon(Icons.delete_outline, color: Colors.redAccent, shadows: [Shadow(color: Colors.redAccent, blurRadius: 10, offset: const Offset(0, 6))]),
                                   onPressed: () {
                                     showDialog(
                                       context: context,

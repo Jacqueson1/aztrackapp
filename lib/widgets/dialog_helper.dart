@@ -48,14 +48,14 @@ class DialogHelper {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           children: [
-            const Icon(Icons.check_circle_outline, color: AppTheme.cyan, size: 28),
+            const Icon(Icons.check_circle_outline, color: AppTheme.slateBlue, size: 28),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 title,
                 style: GoogleFonts.mPlusRounded1c(
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.cyan,
+                  color: AppTheme.slateBlue,
                 ),
               ),
             ),
@@ -68,7 +68,7 @@ class DialogHelper {
         actions: [
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.cyan,
+              backgroundColor: AppTheme.slateBlue,
               foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.pop(ctx),

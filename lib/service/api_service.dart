@@ -32,14 +32,12 @@ class ApiService {
     _client = http.Client();
     timeout = const Duration(seconds: 30);
     
-    if (kIsWeb) {
-      baseUrl = 'http://127.0.0.1:8000/api'; // Web uses localhost
-    } else if (Platform.isAndroid) {
-      // 10.0.2.2 is the host loopback for Android Emulators.
-      baseUrl = 'http://10.0.2.2:8000/api'; 
+    if (kReleaseMode) {
+      // Production URL (used when building for release)
+      baseUrl = 'https://aztrack.khoqiez.com/api';
     } else {
-      // iOS Simulator or Desktop
-      baseUrl = 'http://127.0.0.1:8000/api';
+      // Local development URL (Web localhost)
+      baseUrl = 'https://aztrack.khoqiez.com/api';
     }
   }
 

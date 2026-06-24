@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import 'customer_main_screen.dart';
@@ -10,7 +11,7 @@ class ChooseRoleScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.softGrey,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -18,24 +19,17 @@ class ChooseRoleScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.cyan.withOpacity(0.3),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
+                Transform.scale(
+                  scale: 2.5,
+                  child: SvgPicture.asset(
+                    'lib/assets/images/untitled_design_1.svg',
+                    height: 120,
                   ),
-                  child: const Icon(
-                    Icons.supervised_user_circle_rounded,
-                    size: 80,
-                    color: AppTheme.magenta,
-                  ),
+                ),
+                const SizedBox(height: 20),
+                SvgPicture.asset(
+                  'lib/assets/images/FreeSample-Vectorizer-io-AZprintLogo-removebg-preview.svg',
+                  height: 60,
                 ),
                 const SizedBox(height: 30),
                 Text(
@@ -43,7 +37,7 @@ class ChooseRoleScreen extends StatelessWidget {
                   style: GoogleFonts.mPlusRounded1c(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    color: AppTheme.cyan,
+                    color: AppTheme.slateBlue,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -62,7 +56,8 @@ class ChooseRoleScreen extends StatelessWidget {
                   title: 'Customer',
                   subtitle: 'Track your print orders',
                   icon: Icons.person_rounded,
-                  color: AppTheme.cyan,
+                  color: AppTheme.slateBlue,
+                  isGradient: true,
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
@@ -76,7 +71,9 @@ class ChooseRoleScreen extends StatelessWidget {
                   title: 'Admin / Worker',
                   subtitle: 'Manage orders and system',
                   icon: Icons.admin_panel_settings_rounded,
-                  color: AppTheme.magenta,
+                  color: AppTheme.adminPrimary,
+                  isGradient: true,
+                  isAdmin: true,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -99,6 +96,8 @@ class ChooseRoleScreen extends StatelessWidget {
     required IconData icon,
     required Color color,
     required VoidCallback onTap,
+    bool isGradient = false,
+    bool isAdmin = false,
   }) {
     return InkWell(
       onTap: onTap,
@@ -108,11 +107,15 @@ class ChooseRoleScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: isAdmin ? AppTheme.adminPrimary : AppTheme.slateBlue,
+            width: 2.5,
+          ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
+              color: isAdmin ? AppTheme.adminPrimary.withOpacity(0.4) : AppTheme.slateBlue.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
             ),
           ],
         ),
@@ -121,12 +124,12 @@ class ChooseRoleScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: (isAdmin ? AppTheme.adminPrimary : AppTheme.slateBlue).withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: color,
+                color: isAdmin ? AppTheme.adminPrimary : AppTheme.slateBlue,
                 size: 32,
               ),
             ),
@@ -140,7 +143,7 @@ class ChooseRoleScreen extends StatelessWidget {
                     style: GoogleFonts.mPlusRounded1c(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.keyBlack,
+                      color: isAdmin ? AppTheme.adminPrimary : AppTheme.slateBlue,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -156,10 +159,10 @@ class ChooseRoleScreen extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.grey.shade400,
+              color: isAdmin ? AppTheme.adminPrimary : AppTheme.slateBlue,
             ),
           ],
-        ),
+          ),
       ),
     );
   }

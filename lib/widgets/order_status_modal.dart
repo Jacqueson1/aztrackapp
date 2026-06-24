@@ -5,8 +5,9 @@ import '../theme/app_theme.dart';
 
 class OrderStatusModal extends StatelessWidget {
   final Map<String, dynamic> orderData;
+  final bool isInline;
 
-  const OrderStatusModal({super.key, required this.orderData});
+  const OrderStatusModal({super.key, required this.orderData, this.isInline = false});
 
   @override
   Widget build(BuildContext context) {
@@ -18,33 +19,35 @@ class OrderStatusModal extends StatelessWidget {
     int activeIndex = statuses.indexWhere((s) => s['pivot']?['active'] == 1 || s['pivot']?['active'] == true);
 
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 50,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(10),
+          if (!isInline) ...[
+            Center(
+              child: Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 20),
+          ],
           Text(
             'Tracking: ${orderData['name'] ?? orderData['id']}',
             textAlign: TextAlign.center,
             style: GoogleFonts.mPlusRounded1c(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppTheme.keyBlack,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           if (orderData['customer'] != null && orderData['customer']['name'] != null)
@@ -84,8 +87,8 @@ class OrderStatusModal extends StatelessWidget {
                   bool isCurrent = index == activeIndex;
                   bool isFuture = activeIndex != -1 && index > activeIndex;
 
-                  Color nodeColor = isPast ? AppTheme.cyan : (isCurrent ? AppTheme.magenta : Colors.grey.shade300);
-                  Color lineColor = isFuture ? Colors.grey.shade300 : AppTheme.cyan;
+                  Color nodeColor = isPast ? AppTheme.accentGreen : (isCurrent ? AppTheme.slateBlue : Colors.grey.shade300);
+                  Color lineColor = isFuture ? Colors.grey.shade300 : AppTheme.accentGreen;
 
                   return TimelineTile(
                     alignment: TimelineAlign.manual,
@@ -100,7 +103,7 @@ class OrderStatusModal extends StatelessWidget {
                           : (isPast ? IconStyle(iconData: Icons.check, color: Colors.white, fontSize: 14) : null),
                     ),
                     beforeLineStyle: LineStyle(color: lineColor, thickness: 3),
-                    afterLineStyle: LineStyle(color: index < activeIndex ? AppTheme.cyan : Colors.grey.shade300, thickness: 3),
+                    afterLineStyle: LineStyle(color: index < activeIndex ? AppTheme.accentGreen : Colors.grey.shade300, thickness: 3),
                     endChild: Container(
                       constraints: const BoxConstraints(minHeight: 80),
                       padding: const EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
@@ -115,7 +118,7 @@ class OrderStatusModal extends StatelessWidget {
                               style: GoogleFonts.nunito(
                                 fontSize: isCurrent ? 18 : 16,
                                 fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600,
-                                color: isFuture ? Colors.grey.shade500 : AppTheme.keyBlack,
+                                color: isFuture ? Colors.grey.shade500 : Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             if (isCurrent) ...[
@@ -125,7 +128,7 @@ class OrderStatusModal extends StatelessWidget {
                                 style: GoogleFonts.nunito(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.magenta,
+                                  color: AppTheme.slateBlue,
                                 ),
                               ),
                             ]
@@ -137,11 +140,13 @@ class OrderStatusModal extends StatelessWidget {
                 },
               ),
             ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          )
+          if (!isInline) ...[
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Close'),
+            )
+          ],
         ],
       ),
     );

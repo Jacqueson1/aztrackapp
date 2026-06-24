@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lottie/lottie.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
@@ -32,44 +33,38 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.softGrey,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Placeholder for Company Logo
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.cyan.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 5,
-                  ),
-                ],
+            // Stacked Logos
+            Transform.scale(
+              scale: 2.5,
+              child: SvgPicture.asset(
+                'lib/assets/images/untitled_design_1.svg',
+                height: 120,
               ),
-              child: Icon(
-                Icons.local_printshop_rounded,
-                size: 80,
-                color: AppTheme.magenta,
-              ),
+            ),
+            const SizedBox(height: 20),
+            SvgPicture.asset(
+              'lib/assets/images/FreeSample-Vectorizer-io-AZprintLogo-removebg-preview.svg',
+              height: 80,
             ),
             const SizedBox(height: 30),
             Text(
-              'AZTracking',
+              'AZTRACKING : Order Tracking System',
+              textAlign: TextAlign.center,
               style: GoogleFonts.mPlusRounded1c(
-                fontSize: 36,
+                fontSize: 24,
                 fontWeight: FontWeight.w900,
-                color: AppTheme.cyan,
-                letterSpacing: 2.0,
+                color: AppTheme.slateBlue,
+                letterSpacing: 1.5,
               ),
             ),
             const SizedBox(height: 10),
             Text(
-              'Your Print. Your Way.',
+              'Delivering Trust, Every Step',
               style: GoogleFonts.nunito(
                 fontSize: 16,
                 color: Colors.grey.shade600,
@@ -84,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen> {
               child: Lottie.network(
                 'https://assets2.lottiefiles.com/packages/lf20_tijmpky4.json', // Box delivery animation
                 errorBuilder: (context, error, stackTrace) => const CircularProgressIndicator(
-                  color: AppTheme.yellow,
+                  color: AppTheme.pastelBlue,
                 ),
               ),
             ),

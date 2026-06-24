@@ -100,7 +100,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: AppTheme.softGrey,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
@@ -124,16 +124,16 @@ class _LoginScreenState extends State<LoginScreen> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.cyan.withOpacity(0.2),
-                          blurRadius: 20,
-                          spreadRadius: 5,
+                          color: AppTheme.adminPrimary.withOpacity(0.15),
+                          blurRadius: 30,
+                          offset: const Offset(0, 10),
                         ),
                       ],
                     ),
                     child: const Icon(
                       Icons.admin_panel_settings_rounded,
                       size: 60,
-                      color: AppTheme.magenta,
+                      color: AppTheme.adminPrimary,
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -142,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: GoogleFonts.mPlusRounded1c(
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
-                      color: AppTheme.cyan,
+                      color: AppTheme.adminPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),

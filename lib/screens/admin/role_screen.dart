@@ -76,7 +76,7 @@ class _RoleScreenState extends State<RoleScreen> {
                     value: role['name'],
                     groupValue: selectedRole,
                     onChanged: (val) => setStateModal(() => selectedRole = val!),
-                    activeColor: role['name'] == 'admin' ? AppTheme.magenta : AppTheme.cyan,
+                    activeColor: role['name'] == 'admin' ? AppTheme.adminPrimary : AppTheme.adminPrimary,
                   );
                 }).toList(),
               ],
@@ -109,7 +109,7 @@ class _RoleScreenState extends State<RoleScreen> {
   }
 
   Widget _buildRoleBadge(String roleName) {
-    Color badgeColor = roleName.toLowerCase() == 'admin' ? Colors.redAccent : AppTheme.cyan;
+    Color badgeColor = roleName.toLowerCase() == 'admin' ? Colors.redAccent : AppTheme.adminPrimary;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -141,19 +141,20 @@ class _RoleScreenState extends State<RoleScreen> {
             style: GoogleFonts.mPlusRounded1c(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: AppTheme.keyBlack,
+              color: AppTheme.adminText,
             ),
           ),
           const SizedBox(height: 24),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppTheme.cyan))
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.adminPrimary))
                 : Card(
-                    elevation: 2,
+  elevation: 20,
+  shadowColor: AppTheme.adminPrimary.withOpacity(0.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: ListView.separated(
                       itemCount: _users.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) => const SizedBox(),
                       itemBuilder: (context, index) {
                         final user = _users[index];
                         String primaryRole = 'No Role';
@@ -164,8 +165,8 @@ class _RoleScreenState extends State<RoleScreen> {
                         return ListTile(
                           onTap: () => _showRoleModal(user),
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.magenta.withOpacity(0.1),
-                            child: const Icon(Icons.badge_outlined, color: AppTheme.magenta),
+                            backgroundColor: AppTheme.adminPrimary.withOpacity(0.1),
+                            child: const Icon(Icons.badge_outlined, color: AppTheme.adminPrimary),
                           ),
                           title: Text(user['name'], style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
                           subtitle: Text(user['email'], style: GoogleFonts.nunito(color: Colors.grey.shade600)),

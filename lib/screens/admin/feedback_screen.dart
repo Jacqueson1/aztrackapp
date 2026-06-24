@@ -82,7 +82,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.magenta, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.adminPrimary, foregroundColor: Colors.white),
             onPressed: () async {
               final name = nameController.text.trim();
               final message = messageController.text.trim();
@@ -148,7 +148,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cyan, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.adminPrimary, foregroundColor: Colors.white),
             onPressed: () async {
               final name = nameController.text.trim();
               final message = messageController.text.trim();
@@ -205,7 +205,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                   style: GoogleFonts.mPlusRounded1c(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.keyBlack,
+                    color: AppTheme.adminText,
                   ),
                 ),
                 if (_apiService.hasPermission('create feedbacks'))
@@ -214,7 +214,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     icon: const Icon(Icons.add),
                     label: const Text('Create Feedback'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.magenta,
+                      backgroundColor: AppTheme.adminPrimary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
@@ -225,7 +225,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
           const SizedBox(height: 24),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppTheme.magenta))
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.adminPrimary))
                 : _feedbacks.isEmpty
                     ? Center(
                         child: Text(
@@ -234,11 +234,12 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                         ),
                       )
                     : Card(
-                        elevation: 2,
+  elevation: 20,
+  shadowColor: AppTheme.adminPrimary.withOpacity(0.3),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         child: ListView.separated(
                           itemCount: _feedbacks.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          separatorBuilder: (_, __) => const SizedBox(),
                           itemBuilder: (context, index) {
                             final feedback = _feedbacks[index];
                             final createdAt = feedback['created_at'] != null
@@ -251,8 +252,8 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                             return ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               leading: CircleAvatar(
-                                backgroundColor: AppTheme.magenta.withOpacity(0.1),
-                                child: const Icon(Icons.feedback_outlined, color: AppTheme.magenta),
+                                backgroundColor: AppTheme.adminPrimary.withOpacity(0.1),
+                                child: const Icon(Icons.feedback_outlined, color: AppTheme.adminPrimary),
                               ),
                               title: Text(feedback['name'] ?? 'Unknown', style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
                               subtitle: Column(
@@ -261,7 +262,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                                   const SizedBox(height: 4),
                                   Text(
                                     feedback['message'] ?? '',
-                                    style: GoogleFonts.nunito(color: AppTheme.keyBlack),
+                                    style: GoogleFonts.nunito(color: AppTheme.adminText),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
@@ -275,13 +276,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                                 children: [
                                   if (_apiService.hasPermission('edit feedbacks'))
                                     IconButton(
-                                      icon: const Icon(Icons.edit_rounded, color: AppTheme.cyan),
+                                      icon: Icon(Icons.edit_rounded, color: AppTheme.adminPrimary, shadows: [Shadow(color: AppTheme.adminPrimary, blurRadius: 10, offset: const Offset(0, 6))]),
                                       onPressed: () => _showEditFeedbackModal(feedback),
                                       tooltip: 'Edit',
                                     ),
                                   if (_apiService.hasPermission('delete feedbacks'))
                                     IconButton(
-                                      icon: const Icon(Icons.delete_rounded, color: Colors.redAccent),
+                                      icon: Icon(Icons.delete_rounded, color: Colors.redAccent, shadows: [Shadow(color: Colors.redAccent, blurRadius: 10, offset: const Offset(0, 6))]),
                                       onPressed: () {
                                         showDialog(
                                           context: context,

@@ -78,7 +78,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.cyan, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.adminPrimary, foregroundColor: Colors.white),
             onPressed: () async {
               final name = nameController.text.trim();
               if (name.isEmpty) {
@@ -105,10 +105,11 @@ class _PermissionScreenState extends State<PermissionScreen> {
     );
   }
 
-  void _showPermissionModal(Map<String, dynamic> role) {
+  void _showPermissionModal(Map<String, dynamic> role, {bool isReadOnly = false}) {
     // Collect currently assigned permissions
     final currentPermsList = role['permissions'] as List? ?? [];
     final currentPermNames = currentPermsList.map((p) => p['name'].toString()).toSet();
+    final TextEditingController nameController = TextEditingController(text: role['name']);
 
     // Group all permissions by entity
     final groupedPerms = <String, List<String>>{};
@@ -129,84 +130,224 @@ class _PermissionScreenState extends State<PermissionScreen> {
       builder: (ctx) => StatefulBuilder(
         builder: (dialogContext, setStateModal) {
           return AlertDialog(
-            title: Text('Edit Permissions for ${role['name']}', style: GoogleFonts.mPlusRounded1c(fontWeight: FontWeight.bold)),
+            title: Text(isReadOnly ? 'View Permissions for ${role['name']}' : 'Edit Role & Permissions', style: GoogleFonts.mPlusRounded1c(fontWeight: FontWeight.bold)),
             content: SizedBox(
               width: double.maxFinite,
               child: ListView(
                 shrinkWrap: true,
+                padding: const EdgeInsets.only(top: 8),
                 children: [
+                  if (!isReadOnly) ...[
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Role Name',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.adminPrimary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: AppTheme.adminPrimary, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Note: Selecting "orders" permissions will auto-include customer and status permissions.',
+                              style: GoogleFonts.nunito(color: AppTheme.adminPrimary, fontSize: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
-                    'Select the permissions this role should have.',
+                    isReadOnly ? 'Permissions assigned to this role:' : 'Select the permissions this role should have.',
                     style: GoogleFonts.nunito(color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 16),
-                  ...groupedPerms.entries.map((entry) {
-                    final entity = entry.key;
-                    final perms = entry.value;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: Text(
-                            entity.toUpperCase(),
-                            style: GoogleFonts.mPlusRounded1c(fontWeight: FontWeight.bold, color: AppTheme.cyan),
-                          ),
-                        ),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: perms.map((perm) {
-                            final isSelected = currentPermNames.contains(perm);
-                            final actionName = perm.split(' ')[0].toUpperCase(); // CREATE, EDIT, etc.
-                            return FilterChip(
-                              label: Text(actionName, style: TextStyle(color: isSelected ? Colors.white : AppTheme.keyBlack, fontSize: 12)),
-                              selected: isSelected,
-                              selectedColor: AppTheme.magenta,
-                              checkmarkColor: Colors.white,
-                              onSelected: (selected) {
-                                setStateModal(() {
-                                  if (selected) {
-                                    currentPermNames.add(perm);
-                                  } else {
-                                    currentPermNames.remove(perm);
-                                  }
-                                });
-                              },
-                            );
-                          }).toList(),
-                        ),
-                        const Divider(),
-                      ],
-                    );
-                  }).toList(),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      if (constraints.maxWidth > 600) {
+                        return _buildPermissionTable(groupedPerms, currentPermNames, isReadOnly, setStateModal);
+                      } else {
+                        return _buildPermissionCards(groupedPerms, currentPermNames, isReadOnly, setStateModal);
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
             actions: [
+              if (!isReadOnly)
+                TextButton(
+                  onPressed: () => setStateModal(() => currentPermNames.clear()),
+                  child: const Text('Reset', style: TextStyle(color: Colors.redAccent)),
+                ),
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
+                child: Text(isReadOnly ? 'Close' : 'Cancel'),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(ctx);
-                  try {
-                    await _apiService.post('/roles/${role['id']}/update', body: {
-                      'permissions': currentPermNames.toList(),
-                    });
-                    _fetchData();
-                    if (mounted) DialogHelper.showSuccessDialog(context, 'Success', 'Permissions updated successfully');
-                  } catch (e) {
-                    if (mounted) DialogHelper.showErrorDialog(context, 'Error', 'Failed to update permissions: $e');
-                  }
-                },
-                child: const Text('Save'),
-              ),
+              if (!isReadOnly)
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      await _apiService.post('/roles/${role['id']}/update', body: {
+                        'name': nameController.text.trim(),
+                        'permissions': currentPermNames.toList(),
+                      });
+                      _fetchData();
+                      if (mounted) DialogHelper.showSuccessDialog(context, 'Success', 'Role updated successfully');
+                    } catch (e) {
+                      if (mounted) DialogHelper.showErrorDialog(context, 'Error', 'Failed to update role: $e');
+                    }
+                  },
+                  child: const Text('Save'),
+                ),
             ],
           );
         },
       ),
+    );
+  }
+
+  Widget _buildPermissionTable(Map<String, List<String>> groupedPerms, Set<String> currentPermNames, bool isReadOnly, StateSetter setStateModal) {
+    final columns = ['Module', 'Create', 'View', 'Edit', 'Delete'];
+    
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        headingRowColor: WidgetStateProperty.all(AppTheme.adminPrimary.withOpacity(0.1)),
+        columns: columns.map((c) => DataColumn(label: Text(c, style: GoogleFonts.nunito(fontWeight: FontWeight.bold)))).toList(),
+        rows: groupedPerms.entries.map((entry) {
+          final entity = entry.key;
+          final perms = entry.value;
+          
+          DataCell buildCell(String action) {
+            final permName = '$action $entity';
+            if (!perms.contains(permName)) {
+              return const DataCell(Text('-'));
+            }
+            final isSelected = currentPermNames.contains(permName);
+            return DataCell(
+              Checkbox(
+                value: isSelected,
+                onChanged: isReadOnly ? null : (val) {
+                  setStateModal(() {
+                    if (val == true) {
+                      currentPermNames.addAll(perms);
+                      if (entity == 'orders') {
+                        currentPermNames.addAll(['view customer', 'create customer', 'view status']);
+                      }
+                    } else {
+                      currentPermNames.removeAll(perms);
+                    }
+                  });
+                },
+                activeColor: AppTheme.adminPrimary,
+              ),
+            );
+          }
+
+          return DataRow(
+            cells: [
+              DataCell(Text(entity.toUpperCase(), style: GoogleFonts.mPlusRounded1c(fontWeight: FontWeight.bold))),
+              buildCell('create'),
+              buildCell('view'),
+              buildCell('edit'),
+              buildCell('delete'),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildPermissionCards(Map<String, List<String>> groupedPerms, Set<String> currentPermNames, bool isReadOnly, StateSetter setStateModal) {
+    return Column(
+      children: groupedPerms.entries.map((entry) {
+        final entity = entry.key;
+        final perms = entry.value;
+
+        return Card(
+  elevation: 20,
+  shadowColor: AppTheme.adminPrimary.withOpacity(0.3),
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entity.toUpperCase(),
+                  style: GoogleFonts.mPlusRounded1c(fontWeight: FontWeight.bold, color: AppTheme.adminPrimary, fontSize: 16),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: ['create', 'view', 'edit', 'delete'].map((action) {
+                    final permName = '$action $entity';
+                    if (!perms.contains(permName)) return const SizedBox.shrink();
+                    
+                    final isSelected = currentPermNames.contains(permName);
+                    return InkWell(
+                      onTap: isReadOnly ? null : () {
+                        setStateModal(() {
+                          if (!isSelected) {
+                            currentPermNames.addAll(perms);
+                            if (entity == 'orders') {
+                              currentPermNames.addAll(['view customer', 'create customer', 'view status']);
+                            }
+                          } else {
+                            currentPermNames.removeAll(perms);
+                          }
+                        });
+                      },
+                      child: Container(
+                        width: 100,
+                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.adminPrimary : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: isSelected ? AppTheme.adminPrimary : Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+                              size: 16,
+                              color: isSelected ? Colors.white : Colors.grey,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              action.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: isSelected ? Colors.white : AppTheme.adminText,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 
@@ -220,12 +361,12 @@ class _PermissionScreenState extends State<PermissionScreen> {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
-          color: AppTheme.cyan.withOpacity(0.1),
+          color: AppTheme.adminPrimary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Text(
           '${permissions.length} Permissions',
-          style: GoogleFonts.nunito(color: AppTheme.cyan, fontWeight: FontWeight.bold, fontSize: 12),
+          style: GoogleFonts.nunito(color: AppTheme.adminPrimary, fontWeight: FontWeight.bold, fontSize: 12),
         ),
       );
     }
@@ -235,12 +376,12 @@ class _PermissionScreenState extends State<PermissionScreen> {
       children: permissions.map((p) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
-          color: AppTheme.cyan.withOpacity(0.1),
+          color: AppTheme.adminPrimary.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(
           p['name'].toString().split(' ')[0].toUpperCase(),
-          style: const TextStyle(fontSize: 10, color: AppTheme.cyan, fontWeight: FontWeight.bold),
+          style: const TextStyle(fontSize: 10, color: AppTheme.adminPrimary, fontWeight: FontWeight.bold),
         ),
       )).toList(),
     );
@@ -265,7 +406,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
                   style: GoogleFonts.mPlusRounded1c(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.keyBlack,
+                    color: AppTheme.adminText,
                   ),
                 ),
                 ElevatedButton.icon(
@@ -273,7 +414,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
                   icon: const Icon(Icons.add),
                   label: const Text('Create Role'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.cyan,
+                    backgroundColor: AppTheme.adminPrimary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -284,25 +425,40 @@ class _PermissionScreenState extends State<PermissionScreen> {
           const SizedBox(height: 24),
           Expanded(
             child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppTheme.cyan))
+                ? const Center(child: CircularProgressIndicator(color: AppTheme.adminPrimary))
                 : Card(
-                    elevation: 2,
+  elevation: 20,
+  shadowColor: AppTheme.adminPrimary.withOpacity(0.3),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: ListView.separated(
                       itemCount: _roles.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (_, __) => const SizedBox(),
                       itemBuilder: (context, index) {
                         final role = _roles[index];
                         final perms = role['permissions'] as List? ?? [];
                         return ListTile(
-                          onTap: () => _showPermissionModal(role),
+                          onTap: () => _showPermissionModal(role, isReadOnly: true),
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.cyan.withOpacity(0.1),
-                            child: const Icon(Icons.security_rounded, color: AppTheme.cyan),
+                            backgroundColor: AppTheme.adminPrimary.withOpacity(0.1),
+                            child: const Icon(Icons.security_rounded, color: AppTheme.adminPrimary),
                           ),
                           title: Text(role['name'].toString().toUpperCase(), style: GoogleFonts.nunito(fontWeight: FontWeight.bold)),
                           subtitle: _buildPermissionChips(perms),
-                          trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.remove_red_eye_outlined, color: AppTheme.adminPrimary),
+                                onPressed: () => _showPermissionModal(role, isReadOnly: true),
+                                tooltip: 'View',
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.edit_outlined, color: AppTheme.adminPrimary, shadows: [Shadow(color: AppTheme.adminPrimary, blurRadius: 10, offset: const Offset(0, 6))]),
+                                onPressed: () => _showPermissionModal(role, isReadOnly: false),
+                                tooltip: 'Edit',
+                              ),
+                            ],
+                          ),
                         );
                       },
                     ),
