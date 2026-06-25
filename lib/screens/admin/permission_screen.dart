@@ -90,7 +90,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
               try {
                 await _apiService.post('/roles/store', body: {
                   'name': name,
-                  'guard_name': 'sanctum', // Setting to sanctum as default for API usage
+                  'guard_name': 'web', // Setting to web to fix Spatie model resolution
                 });
                 _fetchData();
                 if (mounted) DialogHelper.showSuccessDialog(context, 'Success', 'Role "$name" created successfully');
@@ -214,6 +214,36 @@ class _PermissionScreenState extends State<PermissionScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(Map<String, dynamic> role) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Delete Role', style: GoogleFonts.mPlusRounded1c(fontWeight: FontWeight.bold)),
+        content: Text('Are you sure you want to delete the role "${role['name']}"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              try {
+                await _apiService.delete('/roles/${role['id']}');
+                _fetchData();
+                if (mounted) DialogHelper.showSuccessDialog(context, 'Success', 'Role deleted successfully');
+              } catch (e) {
+                if (mounted) DialogHelper.showErrorDialog(context, 'Error', 'Failed to delete role: $e');
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
@@ -456,6 +486,11 @@ class _PermissionScreenState extends State<PermissionScreen> {
                                 icon: Icon(Icons.edit_outlined, color: AppTheme.adminPrimary, shadows: [Shadow(color: AppTheme.adminPrimary, blurRadius: 10, offset: const Offset(0, 6))]),
                                 onPressed: () => _showPermissionModal(role, isReadOnly: false),
                                 tooltip: 'Edit',
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete_outline, color: Colors.redAccent, shadows: [Shadow(color: Colors.redAccent, blurRadius: 10, offset: const Offset(0, 6))]),
+                                onPressed: () => _showDeleteConfirmation(role),
+                                tooltip: 'Delete',
                               ),
                             ],
                           ),
