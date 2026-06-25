@@ -75,7 +75,13 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } on ApiException catch (e) {
       setState(() {
-        _errorMessage = e.details?['message'] ?? e.message;
+        if (e.details is Map && e.details['message'] != null) {
+          _errorMessage = e.details['message'].toString();
+        } else if (e.details != null) {
+          _errorMessage = e.details.toString();
+        } else {
+          _errorMessage = e.message;
+        }
       });
     } catch (e) {
       setState(() {
@@ -165,11 +171,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   TextFormField(
                     controller: _emailController,
                     decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
+                      labelText: 'Username or Email',
+                      prefixIcon: Icon(Icons.person_outline),
                     ),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (value) => value!.isEmpty ? 'Please enter your email' : null,
+                    validator: (value) => value!.isEmpty ? 'Please enter your username or email' : null,
                   ),
                   const SizedBox(height: 20),
                   TextFormField(

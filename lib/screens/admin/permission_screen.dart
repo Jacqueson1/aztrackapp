@@ -90,7 +90,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
               try {
                 await _apiService.post('/roles/store', body: {
                   'name': name,
-                  'guard_name': 'web', // Setting to web to fix Spatie model resolution
+                  'guard_name': 'api', // Setting to api based on backend setup
                 });
                 _fetchData();
                 if (mounted) DialogHelper.showSuccessDialog(context, 'Success', 'Role "$name" created successfully');
@@ -199,6 +199,18 @@ class _PermissionScreenState extends State<PermissionScreen> {
                   onPressed: () async {
                     Navigator.pop(ctx);
                     try {
+                      final permissionsPayload = currentPermNames.map((name) {
+                        var perm;
+                        for (var p in _allPermissions) {
+                          if (p['name'] == name) {
+                            perm = p;
+                            break;
+                          }
+                        }
+                        if (perm != null && perm['id'] != null) return perm['id'].toString();
+                        return name;
+                      }).toList();
+
                       await _apiService.post('/roles/${role['id']}/update', body: {
                         'name': nameController.text.trim(),
                         'permissions': currentPermNames.toList(),
@@ -274,7 +286,13 @@ class _PermissionScreenState extends State<PermissionScreen> {
                     if (val == true) {
                       currentPermNames.addAll(perms);
                       if (entity == 'orders') {
-                        currentPermNames.addAll(['view customer', 'create customer', 'view status']);
+                        for (var p in _allPermissions) {
+                          final pName = p['name'].toString();
+                          if (pName == 'view customer' || pName == 'create customer' || pName == 'view status' ||
+                              pName == 'view customers' || pName == 'create customers' || pName == 'view statuses') {
+                            currentPermNames.add(pName);
+                          }
+                        }
                       }
                     } else {
                       currentPermNames.removeAll(perms);
@@ -335,7 +353,13 @@ class _PermissionScreenState extends State<PermissionScreen> {
                           if (!isSelected) {
                             currentPermNames.addAll(perms);
                             if (entity == 'orders') {
-                              currentPermNames.addAll(['view customer', 'create customer', 'view status']);
+                              for (var p in _allPermissions) {
+                                final pName = p['name'].toString();
+                                if (pName == 'view customer' || pName == 'create customer' || pName == 'view status' ||
+                                    pName == 'view customers' || pName == 'create customers' || pName == 'view statuses') {
+                                  currentPermNames.add(pName);
+                                }
+                              }
                             }
                           } else {
                             currentPermNames.removeAll(perms);
