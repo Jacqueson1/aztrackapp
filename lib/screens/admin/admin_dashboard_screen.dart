@@ -265,8 +265,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // User Info & Digital Clock
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                spacing: 12.0,
+                runSpacing: 12.0,
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
